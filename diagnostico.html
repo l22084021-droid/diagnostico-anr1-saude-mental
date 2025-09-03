@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Diagnóstico ANR1 - SAMA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f0f7f0, #e8f5e9);
+      color: #2d3748;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 850px;
+      margin: 0 auto;
+      padding: 20px;
+      text-align: center;
+    }
+    header img.logo {
+      height: 70px;
+      margin-bottom: 15px;
+    }
+    h1, h2 {
+      color: #5d9e4a;
+    }
+    .btn {
+      background: #5d9e4a;
+      color: white;
+      padding: 14px 30px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    .btn:hover {
+      background: #4a8038;
+    }
+    .step {
+      display: none;
+      text-align: left;
+    }
+    .step.active {
+      display: block;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 5px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    .progress {
+      background: #e0e0e0;
+      border-radius: 8px;
+      margin: 15px 0;
+      height: 10px;
+      width: 100%;
+    }
+    .progress-bar {
+      background: #5d9e4a;
+      height: 10px;
+      width: 0%;
+      border-radius: 8px;
+    }
+    footer {
+      margin-top: 30px;
+      font-size: 14px;
+      color: #555;
+      text-align: center;
+    }
+    .opcao { margin: 6px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- TELA INICIAL -->
+    <div id="inicio" class="step active">
+      <header>
+        <img src="assets/logo-sama.png" alt="Logo SAMA" class="logo">
+        <h1>🧠 Diagnóstico ANR1</h1>
+        <p>Clima Organizacional e Saúde Mental</p>
+      </header>
+
+      <button class="btn" onclick="irParaFormulario()">Começar Diagnóstico</button>
+    </div>
+
+    <!-- FORMULÁRIO -->
+    <div id="formulario" class="step">
+      <header>
+        <img src="assets/logo-sama.png" alt="Logo SAMA" class="logo">
+        <h2>📋 Questionário ANR1</h2>
+        <p id="contador">Pergunta 0 de 15</p>
+      </header>
+
+      <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+
+      <form id="form">
+        <!-- Dados da Empresa -->
+        <div id="step-0" class="step active">
+          <h3>Informações da Empresa</h3>
+          <div class="form-group">
+            <label for="empresa">Nome da Empresa</label>
+            <input type="text" id="empresa" required>
+          </div>
+          <div class="form-group">
+            <label for="cnpj">CNPJ</label>
+            <input type="text" id="cnpj" required placeholder="00.000.000/0000-00">
+          </div>
+          <div class="form-group">
+            <label for="colaboradores">Nº de Colaboradores</label>
+            <input type="number" id="colaboradores" required min="1">
+          </div>
+          <button type="button" class="btn" onclick="nextStep()">Avançar</button>
+        </div>
+
+        <!-- Perguntas serão geradas via script -->
+        <div id="perguntas"></div>
+
+        <!-- Resultado -->
+        <div id="resultado" class="step">
+          <h2>🎉 Obrigado, <span id="nome-empresa"></span>!</h2>
+          <p><strong>CNPJ:</strong> <span id="cnpj-empresa"></span></p>
+          <p><strong>Colaboradores:</strong> <span id="colaboradores-empresa"></span></p>
+          <h3>Conformidade ANR1:</h3>
+          <h2 id="pontuacao-final"></h2>
+          <p id="mensagem-final"></p>
+          <button type="button" class="btn" onclick="location.href='obrigado.html'">Ver Relatório</button>
+        </div>
+      </form>
+    </div>
+
+    <footer>
+      &copy; 2025 SAMA Para + Equilíbrio. Todos os direitos reservados.
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    let currentStep = 0;
+    const totalPerguntas = 15;
+
+    // Perguntas e alternativas com pesos (% conformidade)
+    const perguntas = [
+      {
+        texto: "Qual foi o índice de turnover (rotatividade de colaboradores) nos últimos 12 meses?",
+        opcoes: {
+          "Menos de 5%": 100,
+          "Entre 5% e 10%": 80,
+          "Entre 10% e 20%": 50,
+          "Acima de 20%": 20,
+          "Não monitoramos esse dado": 0
+        }
+      },
+      {
+        texto: "Nos últimos 6 meses, houve afastamentos por burnout?",
+        opcoes: {
+          "Não houve casos registrados": 100,
+          "Sim, entre 1 e 5 casos": 60,
+          "Sim, mais de 5 casos": 30,
+          "Não sabemos identificar se foi burnout": 20,
+          "Não monitoramos": 0
+        }
+      },
+      {
+        texto: "Quantos atestados médicos foram entregues nos últimos 3 meses?",
+        opcoes: {
+          "Nenhum": 100,
+          "De 1 a 5": 80,
+          "De 6 a 15": 50,
+          "Mais de 15": 20,
+          "Não temos esse controle": 0
+        }
+      },
+      {
+        texto: "Como os conflitos interpessoais são resolvidos?",
+        opcoes: {
+          "Por mediação do RH ou liderança": 100,
+          "Por diálogo direto entre os envolvidos": 80,
+          "Por afastamento ou troca de setor": 50,
+          "Não há processo definido": 20,
+          "Não sabemos": 0
+        }
+      },
+      {
+        texto: "Quais são as principais causas de afastamento na empresa?",
+        opcoes: {
+          "Doenças físicas": 80,
+          "Doenças emocionais": 40,
+          "Acidentes de trabalho": 50,
+          "Problemas familiares": 60,
+          "Não temos dados": 0
+        }
+      },
+      {
+        texto: "Sua empresa já enfrentou demanda judicial por assédio moral nos últimos 5 anos?",
+        opcoes: {
+          "Não, nunca tivemos casos nem advertências": 100,
+          "Nenhum caso, mas já houve advertências": 70,
+          "Sim, 1 ou 2 casos": 50,
+          "Sim, entre 3 e 5 casos": 30,
+          "Sim, mais de 5 casos": 0
+        }
+      },
+      {
+        texto: "Na sua percepção, o assédio moral pode ocorrer na empresa?",
+        opcoes: {
+          "Não ocorre, clima saudável": 100,
+          "Pouco provável, temos controle": 80,
+          "Raramente ocorre": 60,
+          "Ocorre ocasionalmente": 30,
+          "Ocorre frequentemente": 0
+        }
+      },
+      {
+        texto: "A empresa possui políticas para prevenir assédio moral?",
+        opcoes: {
+          "Sim, com políticas, treinamentos regulares e acompanhamento contínuo": 100,
+          "Sim, com políticas e treinamentos periódicos": 80,
+          "Sim, apenas políticas escritas": 50,
+          "Planejamos implementar": 20,
+          "Não temos políticas": 0
+        }
+      },
+      {
+        texto: "Os colaboradores sentem sobrecarga no trabalho?",
+        opcoes: {
+          "Nunca": 100,
+          "Raramente": 80,
+          "Ocasionalmente": 50,
+          "Frequentemente": 20,
+          "Não temos informação": 0
+        }
+      },
+      {
+        texto: "Como a empresa lida com sobrecarga de trabalho?",
+        opcoes: {
+          "Redistribuição de tarefas": 100,
+          "Contratação temporária": 80,
+          "Incentivo à pausa": 60,
+          "Não há ações específicas": 20,
+          "Não sabemos": 0
+        }
+      },
+      {
+        texto: "Há relatos de interações sociais negativas?",
+        opcoes: {
+          "Não há relatos": 100,
+          "Sim, mas de forma pontual": 60,
+          "Sim, com frequência": 20,
+          "Não sabemos identificar": 20,
+          "Não monitoramos": 0
+        }
+      },
+      {
+        texto: "A empresa possui ações para ambiente emocionalmente saudável?",
+        opcoes: {
+          "Sim, com programas estruturados": 100,
+          "Sim, com ações pontuais": 60,
+          "Não, mas temos interesse": 30,
+          "Não realizamos ações": 0,
+          "Não sei informar": 0
+        }
+      },
+      {
+        texto: "A empresa contrataria equipe especializada para ANR1?",
+        opcoes: {
+          "Já estamos em processo de contratação": 100,
+          "Temos interesse em contratar": 80,
+          "Talvez, dependendo do custo": 50,
+          "Não, realizaremos internamente": 20,
+          "Não temos conhecimento": 0
+        }
+      },
+      {
+        texto: "Qual faixa de orçamento destinará à ANR1?",
+        opcoes: {
+          "Acima de R$ 30.000": 100,
+          "Entre R$ 15.001 e R$ 30.000": 80,
+          "Entre R$ 5.001 e R$ 15.000": 60,
+          "Até R$ 5.000": 40,
+          "Ainda não definimos": 0
+        }
+      },
+      {
+        texto: "Quais diferenciais a equipe especializada deve possuir? (múltipla escolha)",
+        opcoes: {
+          "Experiência em saúde mental corporativa": 15,
+          "Conhecimento sobre ANR1 e legislação": 15,
+          "Capacidade de personalizar soluções": 15,
+          "Equipe multidisciplinar": 15,
+          "Histórico em empresas do setor": 10,
+          "Uso de ferramentas tecnológicas": 10,
+          "Abordagem humanizada": 10,
+          "Custo-benefício competitivo": 10
+        },
+        multipla: true
+      }
+    ];
+
+    const perguntasDiv = document.getElementById("perguntas");
+    perguntas.forEach((p, i) => {
+      const div = document.createElement("div");
+      div.classList.add("step");
+      div.id = "step-" + (i+1);
+
+      let html = `<h3>Pergunta ${i+1}</h3><p>${p.texto}</p>`;
+
+      if (p.multipla) {
+        Object.keys(p.opcoes).forEach(op => {
+          html += `<div class="opcao"><label><input type="checkbox" name="p${i}" value="${p.opcoes[op]}"> ${op}</label></div>`;
+        });
+      } else {
+        Object.keys(p.opcoes).forEach(op => {
+          html += `<div class="opcao"><label><input type="radio" name="p${i}" value="${p.opcoes[op]}" required> ${op}</label></div>`;
+        });
+      }
+
+      html += `<button type="button" class="btn" onclick="nextStep()">Avançar</button>`;
+      div.innerHTML = html;
+      perguntasDiv.appendChild(div);
+    });
+
+    function irParaFormulario() {
+      document.getElementById("inicio").classList.remove("active");
+      document.getElementById("formulario").classList.add("active");
+    }
+
+    function nextStep() {
+      const steps = document.querySelectorAll(".step");
+      steps[currentStep].classList.remove("active");
+      currentStep++;
+      if (currentStep < steps.length) {
+        steps[currentStep].classList.add("active");
+        atualizarProgresso();
+      }
+      if (currentStep === totalPerguntas + 1) calcularResultado();
+    }
+
+    function atualizarProgresso() {
+      const progress = (currentStep / (totalPerguntas+1)) * 100;
+      document.getElementById("progress-bar").style.width = progress + "%";
+      document.getElementById("contador").innerText = 
+        `Pergunta ${Math.min(currentStep, totalPerguntas)} de ${totalPerguntas}`;
+    }
+
+    function calcularResultado() {
+      let soma = 0;
+      let qtd = 0;
+
+      perguntas.forEach((p, i) => {
+        if (p.multipla) {
+          const checks = document.querySelectorAll(`input[name="p${i}"]:checked`);
+          checks.forEach(c => soma += parseInt(c.value));
+          qtd += 100; // normalização
+        } else {
+          const sel = document.querySelector(`input[name="p${i}"]:checked`);
+          if (sel) {
+            soma += parseInt(sel.value);
+            qtd += 100;
+          }
+        }
+      });
+
+      const score = Math.round((soma / qtd) * 100);
+      document.getElementById("pontuacao-final").innerText = score + "%";
+
+      let msg = "✨ Excelente! Sua empresa está em alta conformidade com a ANR1.";
+      if (score < 80) msg = "⚠️ Atenção! Há pontos a melhorar no cumprimento da ANR1.";
+      if (score < 50) msg = "❌ Risco alto! A SAMA recomenda ação imediata.";
+
+      document.getElementById("mensagem-final").innerText = msg;
+
+      document.getElementById("nome-empresa").innerText = 
+        document.getElementById("empresa").value;
+      document.getElementById("cnpj-empresa").innerText = 
+        document.getElementById("cnpj").value;
+      document.getElementById("colaboradores-empresa").innerText = 
+        document.getElementById("colaboradores").value;
+    }
+  </script>
+</body>
+</html>
